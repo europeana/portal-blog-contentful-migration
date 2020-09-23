@@ -1,0 +1,40 @@
+{
+  "name": "@europeana/portal-blog-contentful-migration",
+  "version": "0.0.1",
+  "description": "Node.js scripts to migrate Europeana blog from Wordpress SQL to Contentful",
+  "main": "index.js",
+  "scripts": {
+    "lint": "eslint --ext .js --ignore-path .gitignore .",
+    "blog": "node index.js blog",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "engines": {
+    "node": "^12",
+    "npm": "^6"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/europeana/portal-blog-contentful-migration.git"
+  },
+  "keywords": [
+    "code4lib"
+  ],
+  "contributors": [
+    "Richard Doe <richard.doe@europeana.eu>"
+  ],
+  "private": true,
+  "license": "EUPL-1.2",
+  "bugs": {
+    "url": "https://github.com/europeana/portal-blog-contentful-migration/issues"
+  },
+  "homepage": "https://github.com/europeana/portal-blog-contentful-migration#readme",
+  "dependencies": {
+    "contentful": "^7.14.6",
+    "contentful-management": "^6.1.2",
+    "dotenv": "^8.2.0",
+    "pg": "^8.3.3"
+  },
+  "devDependencies": {
+    "eslint": "^7.9.0"
+  }
+}
