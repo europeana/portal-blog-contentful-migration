@@ -1,11 +1,9 @@
 require('dotenv').config();
 
-const { Client } = require('pg');
+const mysql = require('mysql');
 const contentfulManagement = require('contentful-management');
 
-const pgClient = new Client({
-  connectionString: process.env['PG_URL']
-});
+const mysqlConnection = mysql.createConnection(process.env['MYSQL_URL']);
 
 const contentfulManagementClient = contentfulManagement.createClient({
   accessToken: process.env['CTF_CMA_ACCESS_TOKEN']
@@ -18,7 +16,7 @@ contentfulManagementClient.connect = async function() {
 };
 
 module.exports = {
-  pgClient,
+  mysqlConnection,
   contentfulManagementClient,
   defaultLocale: 'en-GB'
 };

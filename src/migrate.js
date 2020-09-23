@@ -1,14 +1,16 @@
 const {
-  pgClient // , contentfulManagementClient, defaultLocale
+  mysqlConnection // , contentfulManagementClient, defaultLocale
 } = require('./config');
 
 const migrate = async() => {
-  await pgClient.connect();
+  await mysqlConnection.connect();
 
   // TODO: migrate data
   // const contentfulConnection = await contentfulManagementClient.connect();
 
-  await pgClient.end();
+  // mysqlConnection.query();
+
+  await mysqlConnection.end();
 };
 
 const cli = async() => {
