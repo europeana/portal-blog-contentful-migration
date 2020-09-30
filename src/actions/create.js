@@ -8,6 +8,12 @@ const help = () => {
   pad.log('Usage: npm run blog create [ID]');
 };
 
+// Thank you https://stackoverflow.com/a/1353711/6578424
+const isValidDate = (d) => {
+  return d instanceof Date && !isNaN(d);
+};
+
+// TODO: handle Wordpress post statuses
 const create = async(id) => {
   pad.log(`Creating entry for post: ${id}`);
 
@@ -18,11 +24,13 @@ const create = async(id) => {
   const post = result[0][0];
   const entry = new BlogPostingEntry;
 
-  // TODO: handle Wordpress post statuses
   entry.name = post.post_title;
-  entry.identifier = post.post_name || `${post.ID}`; // some unpublished posts have no URL slug in post_name
+  // some unpublished posts have no URL slug in post_name
+  entry.identifier = post.post_name || `${post.ID}`;
   entry.description = post.post_excerpt;
-  entry.datePublished = post.post_date_gmt;
+  // GMT dates are very occasionally blank/invalid
+  const datePublished = isValidDate(post.post_date_gmt) ? post.post_date_gmt : post.post_date;
+  entry.datePublished = datePublished;
 
   await entry.createAndPublish();
 
