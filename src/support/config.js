@@ -1,11 +1,17 @@
 require('dotenv').config();
 
-const mysql = require('mysql');
+const mysql = require('mysql2/promise');
 const contentfulManagementPkg = require('contentful-management');
 const contentful = require('contentful');
 const TurndownService = require('turndown');
 
-const mysqlConnection = mysql.createConnection(process.env['MYSQL_URL']);
+const mysqlClient = {
+  async connect() {
+    const connection = await mysql.createConnection(process.env['MYSQL_URL']);
+    this.connection = connection;
+    return connection;
+  }
+};
 
 const contentfulManagement = {
   async connect() {
@@ -30,8 +36,10 @@ const turndownService = new TurndownService();
 turndownService.keep(['cite']);
 
 module.exports = {
+  maxLengthShort: 255,
+  maxLengthLong: 50000,
   defaultLocale: 'en-GB',
-  mysqlConnection,
+  mysqlClient,
   contentfulManagement,
   contentfulPreviewClient,
   turndownService

@@ -2,7 +2,7 @@ require('dotenv').config();
 
 const crypto = require('crypto');
 
-const { mysqlConnection, contentfulManagement } = require('../support/config');
+const { mysqlClient, contentfulManagement } = require('../support/config');
 const { assetExists } = require('./assets');
 const { LangMap, pad } = require('../support/utils');
 
@@ -27,9 +27,8 @@ const assetIdForAttachmentPost = async(attachmentPostId) => {
 
   let guid;
 
-  mysqlConnection.query(sql, [attachmentPostId], (error, results) => {
-    if (results[0]) guid = accessibleGuid(results[0]['image_file_guid']);
-  });
+  const result = await mysqlClient.connection.execute(sql, [attachmentPostId]);
+  if (result[0][0]) guid = accessibleGuid(result[0][0]['image_file_guid']);
 
   return await assetIdForGuid(guid);
 };
@@ -75,22 +74,21 @@ const migrateAttachment = async(post) => {
 };
 
 const migrateAttachments = async() => {
-  mysqlConnection.query(`
+  const result = mysqlClient.connection.execute(`
     SELECT * FROM wp_posts WHERE post_type='attachment'
-  `, async(error, results) => {
-    for (const post of results) {
-      await migrateAttachment(post);
-    }
-  });
+  `);
+  for (const post of result[0]) {
+    await migrateAttachment(post);
+  }
 };
 
 const cli = async() => {
   await contentfulManagement.connect();
-  await mysqlConnection.connect();
+  await mysqlClient.connect();
 
   await migrateAttachments();
 
-  await mysqlConnection.end();
+  await mysqlClient.connection.end();
 };
 
 module.exports = {
