@@ -1,16 +1,15 @@
-const blog = {
-  migrate: require('./src/migrate').cli
+const actions = require('./src/actions');
+
+const act = async(action, args) => {
+  if (!actions.includes(action)) throw new Error(`Unknown action: ${action}`);
+
+  return require(`./src/actions/${action}`).cli(args);
 };
 
-const act = async(scope, action, args) => {
-  if (scope === 'blog') {
-    if (blog[action]) return await blog[action](args);
-  }
-
-  console.log(`Unknown action: ${scope} ${action}`);
+const action = process.argv[2];
+try {
+  act(action, process.argv.slice(3));
+} catch (e) {
+  console.log(`ERROR: ${e.message}`);
   process.exit(1);
-};
-
-const scope = process.argv[2];
-const action = process.argv[3];
-act(scope, action, process.argv.slice(4));
+}

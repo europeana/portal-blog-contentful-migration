@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "lint": "eslint --ext .js --ignore-path .gitignore .",
-    "blog": "node index.js blog",
+    "blog": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "engines": {
@@ -29,10 +29,12 @@
   },
   "homepage": "https://github.com/europeana/portal-blog-contentful-migration#readme",
   "dependencies": {
+    "cheerio": "^1.0.0-rc.3",
     "contentful": "^7.14.6",
     "contentful-management": "^6.1.2",
     "dotenv": "^8.2.0",
-    "mysql": "^2.18.1"
+    "mysql": "^2.18.1",
+    "turndown": "^6.0.0"
   },
   "devDependencies": {
     "eslint": "^7.9.0"
