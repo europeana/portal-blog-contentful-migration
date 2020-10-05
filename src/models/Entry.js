@@ -4,8 +4,8 @@ const {
 const { pad, LangMap } = require('../support/utils');
 
 class Entry {
-  constructor() {
-    this.sys = {};
+  constructor(sys = {}) {
+    this.sys = sys;
   }
 
   static typecastOneOrMany(value, handler) {
@@ -28,7 +28,12 @@ class Entry {
     pad.increase();
     let entry;
     try {
-      entry = await contentfulManagement.environment.createEntry(this.constructor.contentTypeId, { fields: this.fields });
+      if (this.sys.id) {
+        entry = await contentfulManagement.environment.createEntryWithId(this.constructor.contentTypeId, this.sys.id, { fields: this.fields });
+      } else {
+        entry = await contentfulManagement.environment.createEntry(this.constructor.contentTypeId, { fields: this.fields });
+      }
+
       if (process.env['CREATE_SKIP_PUBLISH_AWAIT'] === '1') {
         entry.publish();
       } else {

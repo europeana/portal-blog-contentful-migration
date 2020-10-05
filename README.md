@@ -33,6 +33,13 @@ The sys ID of the asset will be derived from the MD5 hash of the URL of the
 attachment, and only be stored if it does not already exist, so can be stopped
 and resumed without starting over.
 
+### Authors
+
+To migrate blog post authors to `person` entries in Contentful, run:
+```
+npm run blog authors
+```
+
 ### Assets
 
 To write a cache of the available asset IDs in the Contentful environment to
@@ -58,6 +65,12 @@ npm run blog create [ID]
 To delete the blog post entries from Contentful, and any linked entries, run:
 ```
 npm run blog clean
+```
+
+This defaults to cleaning the `blogPosting` content type, but any other content
+type may be wiped from Contentful by adding its ID as a further argument:
+```
+npm run blog clean [CONTENT_TYPE]
 ```
 
 ## License

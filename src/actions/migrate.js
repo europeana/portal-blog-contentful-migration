@@ -3,13 +3,15 @@ const {
 } = require('./config');
 const { migrateAttachments } = require('./attachments');
 const { cacheAssetIds } = require('./assets');
-const { createAll } = require('./create');
+const createAllBlogPostings = require('./create').createAll;
+const createAllAuthors = require('./authors').createAll;
 
 const migrate = async() => {
   cacheAssetIds();
   migrateAttachments();
   cacheAssetIds();
-  createAll();
+  createAllAuthors();
+  createAllBlogPostings();
 };
 
 const cli = async() => {

@@ -4,12 +4,10 @@
 const { contentfulManagement, contentfulPreviewClient } = require('../support/config');
 const { pad } = require('../support/utils');
 
-const contentTypeId = 'blogPosting';
-
 const contentfulContentTypeLinkFields = {};
 
 const help = () => {
-  pad.log('Usage: npm run blog clean');
+  pad.log('Usage: npm run blog clean [CONTENT_TYPE]');
 };
 
 const deleteEntry = async(id) => {
@@ -64,7 +62,7 @@ async function mayDeleteLinkedEntry(entry) {
   return linksToEntry === 1;
 }
 
-const getEntriesPage = async() => {
+const getEntriesPage = async(contentTypeId) => {
   const entries = await contentfulPreviewClient.getEntries({
     'content_type': contentTypeId,
     include: 10,
@@ -80,10 +78,10 @@ const getEntriesPage = async() => {
   return entries || [];
 };
 
-const clean = async() => {
+const clean = async(contentTypeId) => {
   let entries;
 
-  while ((entries = await getEntriesPage()).length > 0) {
+  while ((entries = await getEntriesPage(contentTypeId)).length > 0) {
     for (const entry of entries) {
       await cleanEntry(entry);
     }
@@ -130,9 +128,15 @@ const linkFieldIds = async(contentTypeId) => {
   return contentfulContentTypeLinkFields[contentTypeId];
 };
 
-const cli = async() => {
+const cli = async(args) => {
   await contentfulManagement.connect();
-  await clean();
+
+  let contentTypeId = 'blogPosting';
+  if (args[0]) {
+    contentTypeId = args[0];
+  }
+
+  await clean(contentTypeId);
 };
 
 module.exports = {

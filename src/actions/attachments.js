@@ -1,10 +1,8 @@
 require('dotenv').config();
 
-const crypto = require('crypto');
-
 const { mysqlClient, contentfulManagement } = require('../support/config');
 const { assetExists } = require('./assets');
-const { LangMap, pad } = require('../support/utils');
+const { LangMap, pad, hashedSysId } = require('../support/utils');
 
 const help = () => {
   pad.log('Usage: npm run blog attachments');
@@ -30,16 +28,12 @@ const assetIdForAttachmentPost = async(attachmentPostId) => {
   const result = await mysqlClient.connection.execute(sql, [attachmentPostId]);
   if (result[0][0]) guid = accessibleGuid(result[0][0]['image_file_guid']);
 
-  return await assetIdForGuid(guid);
-};
-
-const assetIdForGuid = (guid) => {
-  return guid ? crypto.createHash('md5').update(guid).digest('hex') : null;
+  return await hashedSysId(guid);
 };
 
 const migrateAttachment = async(post) => {
   const guid = accessibleGuid(post.guid);
-  const assetId = await assetIdForGuid(guid);
+  const assetId = await hashedSysId(guid);
 
   const exists = await assetExists(assetId);
   if (exists) {
