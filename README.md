@@ -41,6 +41,25 @@ tmp/assetIds.json, for later use by other scripts, speeding up their run time:
 npm run blog assets cache
 ```
 
+### Create
+
+To create the content entries in Contentful from the Wordpress SQL, run:
+```
+npm run blog create
+```
+
+To create just one entry for just one SQL row, add its primary key (ID):
+```
+npm run blog create [ID]
+```
+
+### Clean
+
+To delete the blog post entries from Contentful, and any linked entries, run:
+```
+npm run blog clean
+```
+
 ## License
 
 Licensed under the EUPL v1.2.
