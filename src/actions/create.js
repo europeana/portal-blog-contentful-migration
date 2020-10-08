@@ -1,8 +1,8 @@
 const {
   mysqlClient, contentfulManagement
 } = require('../support/config');
-const { pad } = require('../support/utils');
-const { BlogPostingEntry } = require('../models');
+const { pad, rightsFromAbbreviation } = require('../support/utils');
+const { BlogPostingEntry, ImageWithAttributionEntry } = require('../models');
 
 const help = () => {
   pad.log('Usage: npm run blog create [ID]');
@@ -13,12 +13,32 @@ const isValidDate = (d) => {
   return d instanceof Date && !isNaN(d);
 };
 
+const extractPrimaryImageOfPage = (post) => {
+  if (!post.image_caption) return null;
+  const caption = post.image_caption.trim();
+  if (caption === '') return null;
+  const captionParts = caption.split(',');
+  let captionLastPart = captionParts[captionParts.length - 1].trim();
+  if (captionLastPart.endsWith('.')) captionLastPart = captionLastPart.slice(0, -1);
+
+  const captionLastPartLines = captionLastPart.split(/\n/);
+  const captionLastPartFirstLine = captionLastPartLines[0].trim();
+
+  const rights = rightsFromAbbreviation(captionLastPartFirstLine);
+  console.log('rights', JSON.stringify(rights));
+  // return license;
+};
+
 // TODO: handle Wordpress post statuses
 const createOne = async(id) => {
   pad.log(`Creating entry for post: ${id}`);
 
   const result = await mysqlClient.connection.execute(`
-    SELECT * FROM wp_posts WHERE post_type='post' AND ID=?
+    SELECT wp_posts.*, featured_image.post_title image_title, featured_image.post_excerpt image_caption, featured_image.guid image_url
+    FROM wp_posts
+    LEFT JOIN wp_postmeta ON wp_posts.id=wp_postmeta.post_id AND wp_postmeta.meta_key='_thumbnail_id'
+    LEFT JOIN wp_posts featured_image ON wp_postmeta.meta_value=featured_image.ID
+    WHERE wp_posts.post_type='post' AND wp_posts.ID=?
   `, [id]);
 
   const post = result[0][0];
@@ -32,7 +52,11 @@ const createOne = async(id) => {
   const datePublished = isValidDate(post.post_date_gmt) ? post.post_date_gmt : post.post_date;
   entry.datePublished = datePublished;
 
-  await entry.createAndPublish();
+  // const primaryImageOfPage = extractPrimaryImageOfPage(post);
+  // console.log('primaryImageOfPage', primaryImageOfPage);
+  extractPrimaryImageOfPage(post);
+
+  // await entry.createAndPublish();
 
   return entry;
 };
