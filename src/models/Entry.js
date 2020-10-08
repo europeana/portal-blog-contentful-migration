@@ -34,7 +34,7 @@ class Entry {
         entry = await contentfulManagement.environment.createEntry(this.constructor.contentTypeId, { fields: this.fields });
       }
 
-      if (process.env['CREATE_SKIP_PUBLISH_AWAIT'] === '1') {
+      if (process.env['SKIP_ENTRY_PUBLISH_AWAIT'] === '1') {
         entry.publish();
       } else {
         await entry.publish();

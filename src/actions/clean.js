@@ -45,7 +45,7 @@ const deleteEntry = async(id) => {
 async function mayDeleteLinkedEntry(entry) {
   if (!entry || !entry.sys.revision) {
     return false;
-  } else if (process.env['CLEAN_SKIP_ENTRY_DELETION_LINK_CHECK'] === '1') {
+  } else if (process.env['SKIP_ENTRY_DELETION_LINK_CHECK'] === '1') {
     return true;
   }
 

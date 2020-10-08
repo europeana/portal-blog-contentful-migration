@@ -59,7 +59,11 @@ const migrateAttachment = async(post) => {
     const asset = await contentfulManagement.environment.createAssetWithId(assetId, assetData);
 
     const processedAsset = await asset.processForAllLocales();
-    processedAsset.publish();
+    if (process.env['SKIP_ASSET_PUBLISH_AWAIT'] === '1') {
+      processedAsset.publish();
+    } else {
+      await processedAsset.publish();
+    }
 
     pad.log(`[NEW] <${guid}> ${asset.sys.id}`);
   } catch (e) {
@@ -68,7 +72,7 @@ const migrateAttachment = async(post) => {
 };
 
 const migrateAttachments = async() => {
-  const result = mysqlClient.connection.execute(`
+  const result = await mysqlClient.connection.execute(`
     SELECT * FROM wp_posts WHERE post_type='attachment'
   `);
   for (const post of result[0]) {
