@@ -5,9 +5,10 @@ class BlogPostingEntry extends Entry {
     return 'blogPosting';
   }
 
-  constructor() {
-    super();
+  constructor(sys = {}) {
+    super(sys);
     this.hasPart = [];
+    this.author = [];
   }
 
   get fields() {
@@ -17,10 +18,10 @@ class BlogPostingEntry extends Entry {
       description: this.shortTextField(this.description),
       // primaryImageOfPage: this.linkField(this.primaryImageOfPage),
       // hasPart: this.linkField(this.hasPart),
-      datePublished: this.dateField(this.datePublished)
+      datePublished: this.dateField(this.datePublished),
       // genre: this.shortTextField(this.genre),
       // keywords: this.shortTextField(this.keywords)
-      // author: this.linkField(this.author)
+      author: this.linkField(this.author)
     };
   }
 }
