@@ -28,7 +28,7 @@ const createOne = async(id) => {
 
 const createAll = async() => {
   const result = await mysqlClient.connection.execute(`
-    SELECT DISTINCT post_author FROM blog.wp_posts WHERE post_type='post' ORDER BY post_author ASC
+    SELECT DISTINCT post_author FROM wp_posts WHERE post_type='post' ORDER BY post_author ASC
   `);
   const count = result[0].length;
   let i = 0;
