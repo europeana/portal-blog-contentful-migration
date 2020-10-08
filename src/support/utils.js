@@ -1,3 +1,5 @@
+const crypto = require('crypto');
+
 const { defaultLocale } = require('./config');
 
 const pad = {
@@ -12,6 +14,10 @@ const pad = {
     const prefix = '  '.repeat(this.depth);
     console.log(`${prefix}${msg}`);
   }
+};
+
+const hashedSysId = (guid) => {
+  return guid ? crypto.createHash('md5').update(guid).digest('hex') : null;
 };
 
 class LangMap {
@@ -29,5 +35,6 @@ class LangMap {
 
 module.exports = {
   LangMap,
-  pad
+  pad,
+  hashedSysId
 };

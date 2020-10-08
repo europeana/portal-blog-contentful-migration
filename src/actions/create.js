@@ -14,7 +14,7 @@ const isValidDate = (d) => {
 };
 
 // TODO: handle Wordpress post statuses
-const create = async(id) => {
+const createOne = async(id) => {
   pad.log(`Creating entry for post: ${id}`);
 
   const result = await mysqlClient.connection.execute(`
@@ -47,7 +47,7 @@ const createAll = async() => {
     i = i + 1;
     pad.log(`Blog post ${i}/${count}`);
     pad.increase();
-    await create(row.ID);
+    await createOne(row.ID);
     pad.decrease();
   }
 };
@@ -57,7 +57,7 @@ const cli = async(args) => {
   await mysqlClient.connect();
 
   if (args[0]) {
-    await create(args[0]);
+    await createOne(args[0]);
   } else {
     await createAll();
   }
@@ -66,7 +66,7 @@ const cli = async(args) => {
 };
 
 module.exports = {
-  create,
+  createOne,
   createAll,
   cli,
   help

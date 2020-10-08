@@ -1,4 +1,5 @@
 module.exports = {
   BlogPostingEntry: require('./BlogPostingEntry'),
-  Entry: require('./Entry')
+  Entry: require('./Entry'),
+  PersonEntry: require('./PersonEntry')
 };
