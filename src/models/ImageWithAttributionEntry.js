@@ -9,8 +9,8 @@ class ImageWithAttributionEntry extends Entry {
     return this.constructor.typecastOneOrMany(langMap, (value) => {
       if (typeof value !== 'string') return value;
 
-      const itemIdMatch = value.match(/europeana\.eu\/portal\/([a-z][a-z]\/)?record(\/[0-9]+\/[^/.#$]+)/);
-      if (itemIdMatch) return `http://data.europeana.eu/item${itemIdMatch[2]}`;
+      const itemIdMatch = value.match(/europeana\.eu(\/portal)?\/([a-z][a-z]\/)?(record|item)(\/[0-9]+\/[^/.#$]+)/);
+      if (itemIdMatch) return `http://data.europeana.eu/item${itemIdMatch[4]}`;
 
       if (value.startsWith('www.')) return `https://${value}`;
 
