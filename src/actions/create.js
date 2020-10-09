@@ -2,7 +2,7 @@ const {
   mysqlClient, contentfulManagement
 } = require('../support/config');
 const { pad } = require('../support/utils');
-const { BlogPostingEntry } = require('../models');
+const { BlogPostingEntry, PersonEntry } = require('../models');
 
 const help = () => {
   pad.log('Usage: npm run blog create [ID]');
@@ -18,7 +18,9 @@ const createOne = async(id) => {
   pad.log(`Creating entry for post: ${id}`);
 
   const result = await mysqlClient.connection.execute(`
-    SELECT * FROM wp_posts WHERE post_type='post' AND ID=?
+    SELECT wp_posts.*, wp_users.user_nicename author_username
+    FROM wp_posts LEFT JOIN wp_users ON wp_posts.post_author=wp_users.ID
+    WHERE wp_posts.post_type='post' AND wp_posts.ID=?
   `, [id]);
 
   const post = result[0][0];
@@ -31,6 +33,8 @@ const createOne = async(id) => {
   // GMT dates are very occasionally blank/invalid
   const datePublished = isValidDate(post.post_date_gmt) ? post.post_date_gmt : post.post_date;
   entry.datePublished = datePublished;
+
+  if (post.author_username) entry.author = [PersonEntry.sysIdFromUsername(post.author_username)];
 
   await entry.createAndPublish();
 
