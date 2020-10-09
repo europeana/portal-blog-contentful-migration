@@ -2,7 +2,8 @@ const {
   mysqlClient, contentfulManagement
 } = require('../support/config');
 const { pad } = require('../support/utils');
-const { BlogPostingEntry } = require('../models');
+const { BlogPostingEntry, RichTextEntry } = require('../models');
+const { loadBody } = require('./body');
 
 const help = () => {
   pad.log('Usage: npm run blog create [ID]');
@@ -11,6 +12,20 @@ const help = () => {
 // Thank you https://stackoverflow.com/a/1353711/6578424
 const isValidDate = (d) => {
   return d instanceof Date && !isNaN(d);
+};
+
+const createHasParts = async(post) => {
+  const bodyParts = await loadBody(post);
+  const hasPartSysIds = [];
+  for (const part of bodyParts) {
+    if (part.type === 'html') {
+      const richTextEntry = new RichTextEntry;
+      richTextEntry.text = part.content;
+      await richTextEntry.createAndPublish();
+      hasPartSysIds.push(richTextEntry.sys.id);
+    }
+  }
+  return hasPartSysIds;
 };
 
 // TODO: handle Wordpress post statuses
@@ -31,6 +46,8 @@ const createOne = async(id) => {
   // GMT dates are very occasionally blank/invalid
   const datePublished = isValidDate(post.post_date_gmt) ? post.post_date_gmt : post.post_date;
   entry.datePublished = datePublished;
+
+  entry.hasPart = await createHasParts(post);
 
   await entry.createAndPublish();
 

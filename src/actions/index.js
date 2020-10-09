@@ -4,5 +4,6 @@ module.exports = [
   'attachments',
   'clean',
   'create',
-  'help'
+  'help',
+  'body'
 ];
