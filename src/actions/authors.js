@@ -1,5 +1,5 @@
 const { mysqlClient, contentfulManagement } = require('../support/config');
-const { pad, hashedSysId } = require('../support/utils');
+const { pad } = require('../support/utils');
 const { PersonEntry } = require('../models');
 
 const help = () => {
@@ -10,12 +10,12 @@ const createOne = async(id) => {
   pad.log(`Creating entry for user: ${id}`);
 
   const result = await mysqlClient.connection.execute(`
-    SELECT display_name, user_url, CONCAT(user_nicename, '@blog.europeana.eu') user_id
+    SELECT display_name, user_url, user_nicename
     FROM wp_users WHERE ID=?
   `, [id]);
 
   const user = result[0][0];
-  const sysId = await hashedSysId(user.user_id);
+  const sysId = PersonEntry.sysIdFromUsername(user.user_nicename);
   const entry = new PersonEntry({ id: sysId });
 
   entry.name = user.display_name;
