@@ -13,6 +13,31 @@ const isValidDate = (d) => {
   return d instanceof Date && !isNaN(d);
 };
 
+const tagsAndCategories = async(id) => {
+  const result = await mysqlClient.connection.execute(`
+    SELECT wp_term_taxonomy.taxonomy, wp_terms.name
+    FROM wp_term_relationships
+    LEFT JOIN wp_term_taxonomy ON wp_term_relationships.term_taxonomy_id=wp_term_taxonomy.term_taxonomy_id
+    LEFT JOIN wp_terms ON wp_term_taxonomy.term_id=wp_terms.term_id
+    WHERE wp_term_relationships.object_id=?
+  `, [id]);
+
+  const response = {
+    tags: [],
+    categories: []
+  };
+
+  for (const row of result[0]) {
+    if (row.taxonomy === 'post_tag') {
+      response.tags.push(row.name);
+    } else if (row.taxonomy === 'category') {
+      response.categories.push(row.name);
+    }
+  }
+
+  return response;
+};
+
 // TODO: handle Wordpress post statuses
 const createOne = async(id) => {
   pad.log(`Creating entry for post: ${id}`);
@@ -33,6 +58,10 @@ const createOne = async(id) => {
   // GMT dates are very occasionally blank/invalid
   const datePublished = isValidDate(post.post_date_gmt) ? post.post_date_gmt : post.post_date;
   entry.datePublished = datePublished;
+
+  const postTagsAndCategories = await tagsAndCategories(id);
+  entry.keywords = postTagsAndCategories.tags;
+  entry.genre = postTagsAndCategories.categories;
 
   if (post.author_username) entry.author = [PersonEntry.sysIdFromUsername(post.author_username)];
 
