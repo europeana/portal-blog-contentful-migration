@@ -36,7 +36,7 @@ class LangMap {
 const rightsFromAbbreviation = (abbr) => {
   let rights;
 
-  switch (abbr) {
+  switch (abbr.toUpperCase()) {
     case 'CC0':
       rights = 'http://creativecommons.org/publicdomain/zero/1.0/';
       break;
@@ -59,21 +59,18 @@ const rightsFromAbbreviation = (abbr) => {
     case 'CC BY-SA':
       rights = 'http://creativecommons.org/licenses/by-sa/4.0/';
       break;
-    case 'Copyright not evaluated':
+    case 'COPYRIGHT NOT EVALUATED':
       rights = 'http://rightsstatements.org/vocab/CNE/1.0/';
       break;
-    case 'In copyright':
-    case 'In Copyright':
+    case 'IN COPYRIGHT':
       rights = 'http://rightsstatements.org/vocab/InC/1.0/';
       break;
-    case 'No Copyright - Other Known Legal Restrictions':
-    case 'No Copyright – Other Known Legal Restrictions':
+    case 'NO COPYRIGHT - OTHER KNOWN LEGAL RESTRICTIONS':
+    case 'NO COPYRIGHT – OTHER KNOWN LEGAL RESTRICTIONS':
       rights = 'http://rightsstatements.org/vocab/NoC-OKLR/1.0/';
       break;
-    case 'public domain':
-    case 'Public domain':
-    case 'Public Domain':
-    case 'Public Domain Marked':
+    case 'PUBLIC DOMAIN':
+    case 'PUBLIC DOMAIN MARKED':
       rights = 'http://creativecommons.org/publicdomain/mark/1.0/';
       break;
     default:
