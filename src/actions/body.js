@@ -1,16 +1,18 @@
 const { mysqlClient } = require('../support/config');
 const { pad } = require('../support/utils');
-const { accessibleGuid, assetIdForAttachmentPost } = require('./attachments');
 
+const beautifyHtml = require('js-beautify').html;
 const cheerio = require('cheerio');
 
 const help = () => {
   pad.log('Usage: npm run blog body <ID>');
 };
 
+// TODO: split by <img> tags having blog.europeana.eu src attribute, taking
+//       caption from title attribute, to make into image w/ attribution
 const postElements = (post) => {
   const wpElementPattern = /^<!-- wp:([^ ]+)( ({[^}]*}))? (\/)?-->/;
-  const lines = post.post_content.split('\n');
+  const lines = beautifyHtml(post.post_content).split('\n');
 
   const elements = [];
 
@@ -38,7 +40,7 @@ const postElements = (post) => {
         content: elementContent.join('\n')
       });
     } else if (line !== '') {
-      const elementContent = [];
+      const elementContent = [line];
       let nextLineIsWpElement = false;
       while (lines.length > 0 && !nextLineIsWpElement) {
         if (lines[0].match(wpElementPattern)) {
@@ -58,18 +60,23 @@ const postElements = (post) => {
   return elements;
 };
 
-const reduceElements = (elements) => {
+const reduceElements = async(elements) => {
   const reduced = [];
   const typesToCombine = ['paragraph', 'html', 'separator'];
   while (elements.length > 0) {
     const element = elements.shift();
     if (element.type === 'image') {
       const imageHtml = cheerio.load(element.content);
-      element.url = accessibleGuid(imageHtml('img').attr('src'));
-      element.assetId = assetIdForAttachmentPost(element.url);
-      element.link = imageHtml('a').attr('href');
-      element.text = imageHtml('figcaption').text();
-      reduced.push(element);
+      let url = imageHtml('img').attr('src');
+      // Remove scaling suffix from image URL, e.g. -517x800, to use original size
+      url = url.replace(/-[0-9]+x[0-9]+(\.[^.]+)$/, '$1');
+
+      reduced.push({
+        type: 'image',
+        url,
+        link: imageHtml('a').attr('href'),
+        text: imageHtml('figcaption').text()
+      });
     } else if (typesToCombine.includes(element.type)) {
       const combined = {
         type: 'html',

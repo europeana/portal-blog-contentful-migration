@@ -33,6 +33,7 @@
     "contentful": "^7.14.6",
     "contentful-management": "^6.1.2",
     "dotenv": "^8.2.0",
+    "js-beautify": "^1.13.0",
     "mysql2": "^2.2.5",
     "turndown": "^6.0.0"
   },

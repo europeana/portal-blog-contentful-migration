@@ -18,19 +18,6 @@ const accessibleGuid = (guid) => {
     .replace('http://blog.europeana.eu/', 'https://blog.europeana.eu/');
 };
 
-const assetIdForAttachmentPost = async(attachmentPostId) => {
-  const sql = `
-    select guid from wp_posts where post_type='attachment' AND ID=?
-  `;
-
-  let guid;
-
-  const result = await mysqlClient.connection.execute(sql, [attachmentPostId]);
-  if (result[0][0]) guid = accessibleGuid(result[0][0]['image_file_guid']);
-
-  return await hashedSysId(guid);
-};
-
 const migrateAttachment = async(post) => {
   const guid = accessibleGuid(post.guid);
   const assetId = await hashedSysId(guid);
@@ -72,6 +59,9 @@ const migrateAttachment = async(post) => {
 };
 
 const migrateAttachments = async() => {
+  // TODO: Post 26343 has an inverted version of image 26383, with a hash suffix:
+  //         http://blog.europeana.eu/wp-content/uploads/2020/01/2021609_objecten_82671-e1579705091936.jpeg
+  //       This approach fails to supply such.
   const result = await mysqlClient.connection.execute(`
     SELECT * FROM wp_posts WHERE post_type='attachment'
   `);
@@ -91,7 +81,6 @@ const cli = async() => {
 
 module.exports = {
   accessibleGuid,
-  assetIdForAttachmentPost,
   migrateAttachments,
   cli,
   help

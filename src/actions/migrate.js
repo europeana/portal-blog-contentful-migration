@@ -8,6 +8,10 @@ const createAllAuthors = require('./authors').createAll;
 
 const migrate = async() => {
   cacheAssetIds();
+  // TODO: this will create many attachments we won't use e.g. if they have no
+  //       attribution. Consider refactoring to only create needed assets
+  //       during individual post creation.
+  //       Or pre-validate in `migrateAttachments` that they have an attribution.
   migrateAttachments();
   cacheAssetIds();
   createAllAuthors();
