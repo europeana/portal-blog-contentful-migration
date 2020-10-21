@@ -90,7 +90,7 @@ const reduceElements = async(elements) => {
           nextElementMayBeCombined = false;
         }
       }
-      reduced.push(combined);
+      if (combined.content !== '') reduced.push(combined);
     } else {
       // TODO: handle "block" type
     }

@@ -1,7 +1,8 @@
+const cheerio = require('cheerio');
+
 const {
   mysqlClient, contentfulManagement
 } = require('../support/config');
-
 const { pad } = require('../support/utils');
 const { BlogPostingEntry, ImageWithAttributionEntry, PersonEntry, RichTextEntry } = require('../models');
 const { loadBody } = require('./body');
@@ -66,6 +67,39 @@ const tagsAndCategories = async(id) => {
   return response;
 };
 
+/**
+ * First attempts to use an inline attribution prefixed with "Feature image" in
+ * the post body. Failing that, attempts to use the image caption metadata.
+ */
+const createPrimaryImageOfPage = async(post) => {
+  let primaryImageOfPage;
+
+  const cheerioDoc = cheerio.load(post.post_content, {
+    xml: {
+      withDomLvl1: false // prevent injection of body, head, html elements
+    }
+  });
+  const inlineAttribution = cheerioDoc('p:contains(\'Feature image\')');
+  if (inlineAttribution) {
+    const caption = inlineAttribution.text().replace('Feature image: ', '');
+    const link = cheerioDoc('a', inlineAttribution).attr('href');
+    primaryImageOfPage = await ImageWithAttributionEntry.fromCaption(caption, post.image_url, link);
+  }
+
+  if (!primaryImageOfPage) {
+    primaryImageOfPage = await ImageWithAttributionEntry.fromCaption(post.image_caption, post.image_url);
+  }
+
+  if (primaryImageOfPage) {
+    await primaryImageOfPage.createAndPublish();
+    if (inlineAttribution) {
+      inlineAttribution.remove();
+      post['post_content'] = cheerioDoc.html();
+    }
+    return primaryImageOfPage.sys.id;
+  }
+};
+
 // TODO: handle Wordpress post statuses
 const createOne = async(id) => {
   pad.log(`Creating entry for post: ${id}`);
@@ -96,12 +130,7 @@ const createOne = async(id) => {
   entry.keywords = postTagsAndCategories.tags;
   entry.genre = postTagsAndCategories.categories;
 
-  const primaryImageOfPage = await ImageWithAttributionEntry.fromCaption(post.image_caption, post.image_url);
-
-  if (primaryImageOfPage) {
-    await primaryImageOfPage.createAndPublish();
-    entry.primaryImageOfPage = primaryImageOfPage.sys.id;
-  }
+  entry.primaryImageOfPage = await createPrimaryImageOfPage(post);
 
   entry.hasPart = await createHasParts(post);
 
