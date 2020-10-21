@@ -68,7 +68,7 @@ const tagsAndCategories = async(id) => {
 };
 
 /**
- * First attempts to use an inline attribution prefixed with "Feature image" in
+ * First attempts to use an inline attribution prefixed with "Feature(d) image" in
  * the post body. Failing that, attempts to use the image caption metadata.
  */
 const createPrimaryImageOfPage = async(post) => {
@@ -79,9 +79,12 @@ const createPrimaryImageOfPage = async(post) => {
       withDomLvl1: false // prevent injection of body, head, html elements
     }
   });
-  const inlineAttribution = cheerioDoc('p:contains(\'Feature image\')');
-  if (inlineAttribution) {
-    const caption = inlineAttribution.text().replace('Feature image: ', '');
+  let inlineAttribution = cheerioDoc(':contains(\'Feature image\')');
+  if (inlineAttribution.length === 0) {
+    inlineAttribution = cheerioDoc(':contains(\'Featured image\')');
+  }
+  if (inlineAttribution.length > 0) {
+    const caption = inlineAttribution.text().replace(/Featured? image: /, '');
     const link = cheerioDoc('a', inlineAttribution).attr('href');
     primaryImageOfPage = await ImageWithAttributionEntry.fromCaption(caption, post.image_url, link);
   }
