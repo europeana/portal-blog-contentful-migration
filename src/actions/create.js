@@ -1,9 +1,10 @@
 const {
   mysqlClient, contentfulManagement
 } = require('../support/config');
-const { pad, rightsFromAbbreviation, hashedSysId } = require('../support/utils');
-const { BlogPostingEntry, ImageWithAttributionEntry, PersonEntry } = require('../models');
-const { accessibleGuid } = require('./attachments');
+
+const { pad } = require('../support/utils');
+const { BlogPostingEntry, ImageWithAttributionEntry, PersonEntry, RichTextEntry } = require('../models');
+const { loadBody } = require('./body');
 
 const help = () => {
   pad.log('Usage: npm run blog create [ID]');
@@ -14,56 +15,30 @@ const isValidDate = (d) => {
   return d instanceof Date && !isNaN(d);
 };
 
-/**
- * This uses the caption of an image in the Wordpress blog to attempt to
- * extract the required metadata for an imageWithAttribution entry, and if
- * present create and return such an entry.
- *
- * The caption is first split by commas. The last of those substrings is
- * inspected to see if it contains a recognisable rights statement abbreviation
- * like "CC BY-SA", and if so, that is converted to the relevant URL. If not,
- * null is returned because that field is required.
- *
- * The first substring of the caption is then used for the image title.
- * If there are a total of four substrings, the second and third will be used
- * for the creator and provider respectively.
- *
- * If the last substring had multiple lines and the last of those is a URL,
- * it is used for the url field.
- */
-const createPrimaryImageOfPage = async(post) => {
-  if (!post.image_caption) return null;
+const createHasParts = async(post) => {
+  const bodyParts = await loadBody(post);
+  const hasPartSysIds = [];
+  for (const part of bodyParts) {
+    if (part.type === 'html') {
+      const richTextEntry = new RichTextEntry;
+      richTextEntry.text = part.content;
+      await richTextEntry.createAndPublish();
+      hasPartSysIds.push(richTextEntry.sys.id);
+    } else if (part.type === 'image') {
+      const imageWithAttribution = await ImageWithAttributionEntry.fromCaption(part.text, part.url, part.link);
 
-  const caption = post.image_caption.trim();
-  if (caption === '') return null;
-
-  const captionParts = caption.split(',');
-  let captionLastPart = captionParts[captionParts.length - 1].trim();
-  if (captionLastPart.endsWith('.')) captionLastPart = captionLastPart.slice(0, -1);
-
-  const captionLastPartLines = captionLastPart.split(/\n/);
-  const captionLastPartFirstLine = captionLastPartLines[0].trim();
-
-  const rights = rightsFromAbbreviation(captionLastPartFirstLine);
-  if (!rights) return null;
-
-  const imageWithAttributionEntry = new ImageWithAttributionEntry;
-  imageWithAttributionEntry.license = rights;
-  imageWithAttributionEntry.name = captionParts[0].trim();
-  if (captionParts.length === 4) {
-    imageWithAttributionEntry.creator = captionParts[1].trim();
-    imageWithAttributionEntry.provider = captionParts[2].trim();
-  }
-  if (captionLastPartLines.length > 1) {
-    const captionLastPartLastLine = captionLastPartLines[captionLastPartLines.length - 1].trim();
-    if (/^https?:\/\//.test(captionLastPartLastLine)) {
-      imageWithAttributionEntry.url = captionLastPartLastLine;
+      // TODO: do something with images not having an attribution? convert to HTML?
+      if (imageWithAttribution) {
+        await imageWithAttribution.createAndPublish();
+        hasPartSysIds.push(imageWithAttribution.sys.id);
+      } else {
+        pad.increase();
+        pad.log(`[WARN] Failed to create imageWithAttribution for ${part.url}`);
+        pad.decrease();
+      }
     }
   }
-  imageWithAttributionEntry.image = hashedSysId(accessibleGuid(post.image_url));
-  await imageWithAttributionEntry.createAndPublish();
-
-  return imageWithAttributionEntry;
+  return hasPartSysIds;
 };
 
 const tagsAndCategories = async(id) => {
@@ -121,8 +96,14 @@ const createOne = async(id) => {
   entry.keywords = postTagsAndCategories.tags;
   entry.genre = postTagsAndCategories.categories;
 
-  const primaryImageOfPage = await createPrimaryImageOfPage(post);
-  if (primaryImageOfPage) entry.primaryImageOfPage = primaryImageOfPage.sys.id;
+  const primaryImageOfPage = await ImageWithAttributionEntry.fromCaption(post.image_caption, post.image_url);
+
+  if (primaryImageOfPage) {
+    await primaryImageOfPage.createAndPublish();
+    entry.primaryImageOfPage = primaryImageOfPage.sys.id;
+  }
+
+  entry.hasPart = await createHasParts(post);
 
   if (post.author_username) entry.author = [PersonEntry.sysIdFromUsername(post.author_username)];
 
