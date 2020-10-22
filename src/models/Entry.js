@@ -23,7 +23,7 @@ class Entry {
     return typecast;
   }
 
-  async createAndPublish() {
+  async create() {
     pad.log(`- creating \`${this.constructor.contentTypeId}\``);
     pad.increase();
     let entry;
@@ -33,18 +33,22 @@ class Entry {
       } else {
         entry = await contentfulManagement.environment.createEntry(this.constructor.contentTypeId, { fields: this.fields });
       }
-
-      if (process.env['SKIP_ENTRY_PUBLISH_AWAIT'] === '1') {
-        entry.publish();
-      } else {
-        await entry.publish();
-      }
     } catch (e) {
       pad.log(`- ERROR: ${e.message}`);
       process.exit(1);
     }
     pad.decrease();
     this.sys = entry.sys;
+    return entry;
+  }
+
+  async createAndPublish() {
+    const entry = await this.create();
+    if (process.env['SKIP_ENTRY_PUBLISH_AWAIT'] === '1') {
+      entry.publish();
+    } else {
+      await entry.publish();
+    }
   }
 
   getField(fieldName) {
