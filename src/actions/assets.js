@@ -4,43 +4,43 @@ const path = require('path');
 const { contentfulPreviewClient } = require('../support/config');
 const { pad } = require('../support/utils');
 
-const cacheFilePath = path.resolve(__dirname, '../../tmp/assetIds.json');
+const cacheFilePath = path.resolve(__dirname, '../../tmp/assetMap.json');
 
-let assetIds;
+let assetMap;
 
 const help = () => {
   pad.log('Usage: npm run blog assets <list|cache>');
 };
 
-// Fetch all asset IDs via the preview API, for later use by `assetExists`
-const loadAssetIds = async() => {
-  pad.log('Loading asset IDs...');
+// Fetch all asset map via the preview API, for later use by `assetExists`
+const loadAssetMap = async() => {
+  pad.log('Loading asset map...');
 
-  assetIds = await loadAssetIdsFromCache();
-  if (assetIds) {
+  assetMap = await loadAssetMapFromCache();
+  if (assetMap) {
     pad.log(`  ... loaded from cache file ${cacheFilePath}`);
   } else {
-    assetIds = await loadAssetIdsFromContentful();
+    assetMap = await loadAssetMapFromContentful();
     pad.log('  ... loaded from Contentful');
   }
 
-  return assetIds;
+  return assetMap;
 };
 
-const cacheAssetIds = async() => {
-  const assetIds = await loadAssetIdsFromContentful();
-  fs.writeFileSync(cacheFilePath, JSON.stringify(assetIds));
+const cacheAssetMap = async() => {
+  const assetMap = await loadAssetMapFromContentful();
+  fs.writeFileSync(cacheFilePath, JSON.stringify(assetMap, null, 2));
   pad.log(`Asset ID cache written to ${cacheFilePath}`);
 };
 
-const loadAssetIdsFromCache = () => {
+const loadAssetMapFromCache = () => {
   if (!fs.existsSync(cacheFilePath)) return null;
   const cacheFileContents = fs.readFileSync(cacheFilePath, { encoding: 'utf8' });
   return JSON.parse(cacheFileContents);
 };
 
-const loadAssetIdsFromContentful = async() => {
-  let ids = [];
+const loadAssetMapFromContentful = async() => {
+  const assetMap = {};
 
   let skip = 0;
   let keepGoing = true;
@@ -53,28 +53,36 @@ const loadAssetIdsFromContentful = async() => {
     if (assets.items.length === 0) {
       keepGoing = false;
     } else {
-      ids = ids.concat(assets.items.map((item) => item.sys.id));
+      for (const item of assets.items) {
+        if (item.fields.file) assetMap[item.sys.id] = item.fields.file.url;
+      }
       skip = skip + 100;
     }
   }
 
-  return ids;
+  return assetMap;
 };
 
 const assetExists = async(assetId) => {
-  if (!assetIds) await loadAssetIds();
+  if (!assetMap) await loadAssetMap();
 
-  return assetIds.includes(assetId);
+  return assetMap.keys().includes(assetId);
+};
+
+const assetUrl = async(assetId) => {
+  if (!assetMap) await loadAssetMap();
+
+  return assetMap[assetId];
 };
 
 const cli = async(args) => {
   switch (args[0]) {
     case 'cache':
-      cacheAssetIds();
+      cacheAssetMap();
       break;
     case 'list':
-      await loadAssetIds();
-      pad.log(JSON.stringify(assetIds));
+      await loadAssetMap();
+      pad.log(JSON.stringify(assetMap, null, 2));
       break;
     default:
       help();
@@ -85,6 +93,7 @@ module.exports = {
   cli,
   help,
   assetExists,
-  cacheAssetIds,
-  loadAssetIds
+  assetUrl,
+  cacheAssetMap,
+  loadAssetMap
 };

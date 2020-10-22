@@ -105,8 +105,6 @@ const createPrimaryImageOfPage = async(post) => {
 
 // TODO: handle Wordpress post statuses
 const createOne = async(id) => {
-  pad.log(`Creating entry for post: ${id}`);
-
   const result = await mysqlClient.connection.execute(`
     SELECT wp_posts.*,
            wp_users.user_nicename author_username,
@@ -119,11 +117,15 @@ const createOne = async(id) => {
   `, [id]);
 
   const post = result[0][0];
+
   const entry = new BlogPostingEntry;
 
-  entry.name = post.post_title;
   // some unpublished posts have no URL slug in post_name
-  entry.identifier = post.post_name || `${post.ID}`;
+  const identifier = post.post_name || `${post.ID}`;
+  pad.log(`Creating entry for post: "${identifier}" [ID=${id}]`);
+
+  entry.name = post.post_title;
+  entry.identifier = identifier;
   entry.description = post.post_excerpt;
   // GMT dates are very occasionally blank/invalid
   const datePublished = isValidDate(post.post_date_gmt) ? post.post_date_gmt : post.post_date;
@@ -139,7 +141,7 @@ const createOne = async(id) => {
 
   if (post.author_username) entry.author = [PersonEntry.sysIdFromUsername(post.author_username)];
 
-  await entry.createAndPublish();
+  await post.post_status === 'publish' ? entry.createAndPublish() : entry.create();
 
   return entry;
 };
