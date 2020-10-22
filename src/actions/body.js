@@ -93,8 +93,11 @@ const reduceElements = async(elements) => {
           nextElementMayBeCombined = false;
         }
       }
-      combined.content = await linkAttributesToContentful(combined.content);
-      if (combined.content !== '') reduced.push(combined);
+
+      if (combined.content !== '') {
+        combined.content = await linkAttributesToContentful(combined.content);
+        reduced.push(combined);
+      }
     } else {
       // TODO: handle "block" type
     }
