@@ -14,14 +14,19 @@ const help = () => {
 // TODO: split by <img> tags having blog.europeana.eu src attribute, taking
 //       caption from title attribute, to make into image w/ attribution
 const postElements = (post) => {
-  const wpElementPattern = /^<!-- wp:([^ ]+)( ({[^}]*}))? (\/)?-->/;
   const lines = beautifyHtml(post.post_content).split('\n');
+
+  const wpElementPattern = /^<!-- wp:([^ ]+)( ({[^}]*}))? (\/)?-->/;
+  const wpCaptionPattern = /^\[caption[^\]]*](.*)\[\/caption]/;
 
   const elements = [];
 
   while (lines.length > 0) {
     const line = lines.shift();
+
     const wpElement = line.match(wpElementPattern);
+    const wpCaption = line.match(wpCaptionPattern);
+
     if (wpElement) {
       const elementType = wpElement[1];
       const elementOptions = wpElement[3] ? JSON.parse(wpElement[3]) : null;
@@ -42,12 +47,17 @@ const postElements = (post) => {
         options: elementOptions,
         content: elementContent.join('\n')
       });
+    } else if (wpCaption) {
+      elements.push({
+        type: 'image',
+        content: wpCaption[1]
+      });
     } else if (line !== '') {
       const elementContent = [line];
-      let nextLineIsWpElement = false;
-      while (lines.length > 0 && !nextLineIsWpElement) {
-        if (lines[0].match(wpElementPattern)) {
-          nextLineIsWpElement = true;
+      let nextLineStops = false;
+      while (lines.length > 0 && !nextLineStops) {
+        if (lines[0].match(wpElementPattern) || lines[0].match(wpCaptionPattern)) {
+          nextLineStops = true;
         } else {
           elementContent.push(lines.shift());
         }
@@ -69,16 +79,16 @@ const reduceElements = async(elements) => {
   while (elements.length > 0) {
     const element = elements.shift();
     if (element.type === 'image') {
-      const imageHtml = cheerio.load(element.content);
-      let url = imageHtml('img').attr('src');
+      const cheerioDoc = cheerio.load(element.content);
+      let url = cheerioDoc('img').attr('src');
       // Remove scaling suffix from image URL, e.g. -517x800, to use original size
       url = url.replace(/-[0-9]+x[0-9]+(\.[^.]+)$/, '$1');
 
       reduced.push({
         type: 'image',
         url,
-        link: imageHtml('a').attr('href'),
-        text: imageHtml('figcaption').text()
+        link: cheerioDoc('a').attr('href'),
+        text: cheerioDoc.root().text()
       });
     } else if (typesToCombine.includes(element.type)) {
       const combined = {
