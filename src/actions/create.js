@@ -103,7 +103,6 @@ const createPrimaryImageOfPage = async(post) => {
   }
 };
 
-// TODO: handle Wordpress post statuses
 const createOne = async(id) => {
   const result = await mysqlClient.connection.execute(`
     SELECT wp_posts.*,
