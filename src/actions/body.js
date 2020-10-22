@@ -3,6 +3,7 @@ const { pad } = require('../support/utils');
 const { hashedSysId } = require('../support/utils');
 const { accessibleGuid } = require('./attachments');
 const { assetUrl } = require('./assets');
+const { ImageWithAttributionEntry } = require('../models');
 
 const beautifyHtml = require('js-beautify').html;
 const cheerio = require('cheerio');
@@ -29,29 +30,24 @@ const postElements = (post) => {
 
     if (wpElement) {
       const elementType = wpElement[1];
-      const elementOptions = wpElement[3] ? JSON.parse(wpElement[3]) : null;
       let elementClosed = !!wpElement[4];
-      const elementContent = [];
+      let elementContent = '';
 
       while (lines.length > 0 && !elementClosed) {
         const nextLine = lines.shift();
         if (nextLine === `<!-- /wp:${elementType} -->`) {
           elementClosed = true;
         } else {
-          elementContent.push(nextLine);
+          elementContent = `${elementContent}\n${nextLine}`;
         }
       }
 
-      elements.push({
+      elements.push(elementType === 'image' ? elementForImage(elementContent) : {
         type: elementType,
-        options: elementOptions,
-        content: elementContent.join('\n')
+        content: elementContent
       });
     } else if (wpCaption) {
-      elements.push({
-        type: 'image',
-        content: wpCaption[1]
-      });
+      elements.push(elementForImage(wpCaption[1]));
     } else if (line !== '') {
       const elementContent = [line];
       let nextLineStops = false;
@@ -73,23 +69,35 @@ const postElements = (post) => {
   return elements;
 };
 
+const elementForImage = async(content) => {
+  const cheerioDoc = cheerio.load(content);
+  const text = cheerioDoc.root().text();
+
+  if (await ImageWithAttributionEntry.fromCaption(text)) {
+    let url = cheerioDoc('img').attr('src');
+    // Remove scaling suffix from image URL, e.g. -517x800, to use original size
+    url = url.replace(/-[0-9]+x[0-9]+(\.[^.]+)$/, '$1');
+    return {
+      type: 'image',
+      url,
+      link: cheerioDoc('a').attr('href'),
+      text
+    };
+  } else {
+    return {
+      type: 'html',
+      content
+    };
+  }
+};
+
 const reduceElements = async(elements) => {
   const reduced = [];
   const typesToCombine = ['paragraph', 'html', 'separator'];
   while (elements.length > 0) {
     const element = elements.shift();
     if (element.type === 'image') {
-      const cheerioDoc = cheerio.load(element.content);
-      let url = cheerioDoc('img').attr('src');
-      // Remove scaling suffix from image URL, e.g. -517x800, to use original size
-      url = url.replace(/-[0-9]+x[0-9]+(\.[^.]+)$/, '$1');
-
-      reduced.push({
-        type: 'image',
-        url,
-        link: cheerioDoc('a').attr('href'),
-        text: cheerioDoc.root().text()
-      });
+      reduced.push(element);
     } else if (typesToCombine.includes(element.type)) {
       const combined = {
         type: 'html',

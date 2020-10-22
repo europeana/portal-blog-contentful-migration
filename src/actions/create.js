@@ -34,7 +34,7 @@ const createHasParts = async(post) => {
         hasPartSysIds.push(imageWithAttribution.sys.id);
       } else {
         pad.increase();
-        pad.log(`[WARN] Failed to create imageWithAttribution for ${part.url}`);
+        pad.log(`[ERROR] Failed to create imageWithAttribution for ${part.url}`);
         pad.decrease();
       }
     }
