@@ -1,7 +1,7 @@
 require('dotenv').config();
 
 const { mysqlClient, contentfulManagement } = require('../support/config');
-const { assetExists } = require('./assets');
+const { assetExists, cacheAssetMap } = require('./assets');
 const { LangMap, pad, hashedSysId } = require('../support/utils');
 
 const help = () => {
@@ -70,11 +70,33 @@ const migrateAttachments = async() => {
   }
 };
 
+const detectMissingGeneratedMedia = async() => {
+  const result = await mysqlClient.connection.execute(`
+    SELECT ID, post_content FROM wp_posts WHERE post_type='post'
+  `);
+
+  for (const post of result[0]) {
+    const pattern = /"(https?:\/\/blog\.europeana\.eu(:81)?\/wp-content\/uploads\/[^"]*)"/g;
+    const matches = post.post_content.matchAll(pattern);
+    for (const match of matches) {
+      const url = match[1];
+      const assetId = hashedSysId(accessibleGuid(match[1]));
+      if (await assetExists(assetId)) {
+        pad.log(`[EXISTS] <${url}> ${assetId}`);
+      } else {
+        pad.log(`[MISSING] <${url}> ${assetId}`);
+      }
+    }
+  }
+};
+
 const cli = async() => {
   await contentfulManagement.connect();
   await mysqlClient.connect();
 
   await migrateAttachments();
+  // await cacheAssetMap();
+  // await detectMissingGeneratedMedia();
 
   await mysqlClient.connection.end();
 };
