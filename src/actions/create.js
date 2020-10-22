@@ -83,7 +83,6 @@ const createPrimaryImageOfPage = async(post) => {
   if (inlineAttribution.length === 0) {
     inlineAttribution = cheerioDoc(':contains(\'Featured image\')');
   }
-  console.log('inlineAttribution.length', inlineAttribution.length);
   if (inlineAttribution.length > 0) {
     const caption = inlineAttribution.text().replace(/Featured? image: ?/g, '');
     const link = cheerioDoc('a', inlineAttribution).attr('href');
