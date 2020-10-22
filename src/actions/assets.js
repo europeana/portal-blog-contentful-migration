@@ -66,7 +66,7 @@ const loadAssetMapFromContentful = async() => {
 const assetExists = async(assetId) => {
   if (!assetMap) await loadAssetMap();
 
-  return assetMap.keys().includes(assetId);
+  return Object.keys(assetMap).includes(assetId);
 };
 
 const assetUrl = async(assetId) => {
