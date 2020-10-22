@@ -1,5 +1,8 @@
 const { mysqlClient } = require('../support/config');
 const { pad } = require('../support/utils');
+const { hashedSysId } = require('../support/utils');
+const { accessibleGuid } = require('./attachments');
+const { assetUrl } = require('./assets');
 
 const beautifyHtml = require('js-beautify').html;
 const cheerio = require('cheerio');
@@ -90,12 +93,40 @@ const reduceElements = async(elements) => {
           nextElementMayBeCombined = false;
         }
       }
-      reduced.push(combined);
+      combined.content = await linkAttributesToContentful(combined.content);
+      if (combined.content !== '') reduced.push(combined);
     } else {
       // TODO: handle "block" type
     }
   }
   return reduced;
+};
+
+const linkAttributesToContentful = async(html) => {
+  const linkMatches = html.matchAll(/"(https?:\/\/blog\.europeana\.eu(:81)?([^"]*))"/g);
+
+  for (const linkMatch of linkMatches) {
+    const url = linkMatch[1];
+    const path = linkMatch[3];
+
+    let replacement;
+
+    const postPathMatch = path.match(/^\/[0-9]{4}\/[0-9]{2}\/([^/]+)/);
+    if (postPathMatch) {
+      replacement = '/blog/' + postPathMatch[1];
+    } else {
+      const uploadPathMatch = path.match(/^\/wp-content\/uploads\//);
+      if (uploadPathMatch) {
+        replacement = await assetUrl(hashedSysId(accessibleGuid(url)));
+      }
+    }
+
+    if (replacement) {
+      html = html.replace(url, replacement);
+    }
+  }
+
+  return html;
 };
 
 const loadBody = async(postOrId) => {
