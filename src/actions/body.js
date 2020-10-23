@@ -14,7 +14,7 @@ const help = () => {
 
 // TODO: split by <img> tags having blog.europeana.eu src attribute, taking
 //       caption from title attribute, to make into image w/ attribution
-const postElements = (post) => {
+const postElements = async(post) => {
   const lines = beautifyHtml(post.post_content).split('\n');
 
   const wpElementPattern = /^<!-- wp:([^ ]+)( ({[^}]*}))? (\/)?-->/;
@@ -42,12 +42,12 @@ const postElements = (post) => {
         }
       }
 
-      elements.push(elementType === 'image' ? elementForImage(elementContent) : {
+      elements.push(elementType === 'image' ? await elementForImage(elementContent) : {
         type: elementType,
         content: elementContent
       });
     } else if (wpCaption) {
-      elements.push(elementForImage(wpCaption[1]));
+      elements.push(await elementForImage(wpCaption[1]));
     } else if (line !== '') {
       const elementContent = [line];
       let nextLineStops = false;
@@ -73,10 +73,12 @@ const elementForImage = async(content) => {
   const cheerioDoc = cheerio.load(content);
   const text = cheerioDoc.root().text();
 
-  if (await ImageWithAttributionEntry.fromCaption(text)) {
-    let url = cheerioDoc('img').attr('src');
-    // Remove scaling suffix from image URL, e.g. -517x800, to use original size
-    url = url.replace(/-[0-9]+x[0-9]+(\.[^.]+)$/, '$1');
+  let url = cheerioDoc('img').attr('src');
+  // Remove scaling suffix from image URL, e.g. -517x800, to use original size
+  url = url.replace(/-[0-9]+x[0-9]+(\.[^.]+)$/, '$1');
+
+  const withAttribution = await ImageWithAttributionEntry.fromCaption(text, url);
+  if (withAttribution) {
     return {
       type: 'image',
       url,
@@ -160,7 +162,7 @@ const loadBody = async(postOrId) => {
     `, [postOrId]);
     post = result[0][0];
   }
-  const elements = postElements(post);
+  const elements = await postElements(post);
   const reduced = reduceElements(elements);
 
   return reduced;
