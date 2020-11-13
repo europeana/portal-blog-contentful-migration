@@ -81,7 +81,7 @@ const convertIframesToEmbeds = (elements) => {
             type: 'embed',
             content: part
           });
-        } else {
+        } else if (part.length > 0) {
           converted.push({
             type: 'html',
             content: part
