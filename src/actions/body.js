@@ -95,7 +95,7 @@ const elementForImage = async(content) => {
 
 const reduceElements = async(elements) => {
   const reduced = [];
-  const typesToCombine = ['paragraph', 'html', 'separator'];
+  const typesToCombine = ['paragraph', 'html', 'separator', 'list', 'heading', 'file'];
   while (elements.length > 0) {
     const element = elements.shift();
     if (element.type === 'image') {
@@ -119,6 +119,7 @@ const reduceElements = async(elements) => {
         reduced.push(combined);
       }
     } else {
+      pad.log(`[WARN] unsupported element type "${element.type}"`);
       // TODO: handle "block" type
     }
   }
