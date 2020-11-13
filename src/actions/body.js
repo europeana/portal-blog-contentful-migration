@@ -69,6 +69,32 @@ const postElements = async(post) => {
   return elements;
 };
 
+const convertIframesToEmbeds = (elements) => {
+  const iframePattern = /(<iframe [^>]*?><\/iframe>)/ig;
+  const converted = [];
+  for (const element of elements) {
+    if (element.type === 'html') {
+      const elementContentSplitByIframes = element.content.split(iframePattern);
+      for (const part of elementContentSplitByIframes) {
+        if (iframePattern.test(part)) {
+          converted.push({
+            type: 'embed',
+            content: part
+          });
+        } else {
+          converted.push({
+            type: 'html',
+            content: part
+          });
+        }
+      }
+    } else {
+      converted.push(element);
+    }
+  }
+  return converted;
+};
+
 const elementForImage = async(content) => {
   const cheerioDoc = cheerio.load(content);
   const text = cheerioDoc.root().text();
@@ -95,7 +121,7 @@ const elementForImage = async(content) => {
 
 const reduceElements = async(elements) => {
   const reduced = [];
-  const typesToCombine = ['paragraph', 'html', 'separator', 'list', 'heading', 'file'];
+  const typesToCombine = ['paragraph', 'html', 'separator', 'list', 'heading', 'file', 'shortcode'];
   while (elements.length > 0) {
     const element = elements.shift();
     if (element.type === 'image') {
@@ -119,8 +145,10 @@ const reduceElements = async(elements) => {
         reduced.push(combined);
       }
     } else {
-      pad.log(`[WARN] unsupported element type "${element.type}"`);
       // TODO: handle "block" type
+      pad.increase();
+      pad.log(`[WARN] unsupported element type "${element.type}"`);
+      pad.decrease();
     }
   }
   return reduced;
@@ -153,20 +181,17 @@ const linkAttributesToContentful = async(html) => {
   return html;
 };
 
-const loadBody = async(postOrId) => {
-  let post;
-  if (typeof postOrId === 'object') {
-    post = postOrId;
-  } else {
-    const result = await mysqlClient.connection.execute(`
-      SELECT * FROM wp_posts WHERE post_type='post' AND ID=?
-    `, [postOrId]);
-    post = result[0][0];
-  }
-  const elements = await postElements(post);
-  const reduced = reduceElements(elements);
+const loadBody = async(postId) => {
+  const result = await mysqlClient.connection.execute(`
+    SELECT * FROM wp_posts WHERE post_type='post' AND ID=?
+  `, [postId]);
+  const post = result[0][0];
 
-  return reduced;
+  const elements = await postElements(post);
+  const reduced = await reduceElements(elements);
+  const converted = await convertIframesToEmbeds(reduced);
+
+  return converted;
 };
 
 const cli = async(args) => {
