@@ -124,13 +124,18 @@ const reduceElements = async(elements) => {
   const typesToCombine = [
     'file',
     'gallery',
+    'group',
     'heading',
     'html',
     'list',
     'paragraph',
+    'preformatted',
+    'pullquote',
     'quote',
     'separator',
-    'shortcode'
+    'shortcode',
+    'verse',
+    'video'
   ];
   while (elements.length > 0) {
     const element = elements.shift();
