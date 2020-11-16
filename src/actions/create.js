@@ -4,7 +4,9 @@ const {
   mysqlClient, contentfulManagement
 } = require('../support/config');
 const { pad } = require('../support/utils');
-const { BlogPostingEntry, ImageWithAttributionEntry, PersonEntry, RichTextEntry } = require('../models');
+const {
+  BlogPostingEntry, EmbedEntry, ImageWithAttributionEntry, PersonEntry, RichTextEntry
+} = require('../models');
 const { loadBody } = require('./body');
 
 const help = () => {
@@ -19,6 +21,7 @@ const isValidDate = (d) => {
 const createHasParts = async(post) => {
   const bodyParts = await loadBody(post);
   const hasPartSysIds = [];
+
   for (const part of bodyParts) {
     if (part.type === 'html') {
       const richTextEntry = new RichTextEntry;
@@ -37,8 +40,19 @@ const createHasParts = async(post) => {
         pad.log(`[ERROR] Failed to create imageWithAttribution for ${part.url}`);
         pad.decrease();
       }
+    } else if (part.type === 'embed') {
+      const embedEntry = new EmbedEntry;
+      embedEntry.name = `Embed for ${post.post_title}`;
+      embedEntry.embed = part.content;
+      await embedEntry.createAndPublish();
+      hasPartSysIds.push(embedEntry.sys.id);
+    } else {
+      pad.increase();
+      pad.log(`[ERROR] unknown part type ${part.type}`);
+      pad.decrease();
     }
   }
+
   return hasPartSysIds;
 };
 
@@ -136,7 +150,7 @@ const createOne = async(id) => {
 
   entry.primaryImageOfPage = await createPrimaryImageOfPage(post);
 
-  entry.hasPart = await createHasParts(post);
+  entry.hasPart = await createHasParts(post.ID);
 
   if (post.author_username) entry.author = [PersonEntry.sysIdFromUsername(post.author_username)];
 
