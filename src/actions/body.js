@@ -121,7 +121,17 @@ const elementForImage = async(content) => {
 
 const reduceElements = async(elements) => {
   const reduced = [];
-  const typesToCombine = ['paragraph', 'html', 'separator', 'list', 'heading', 'file', 'shortcode'];
+  const typesToCombine = [
+    'file',
+    'gallery',
+    'heading',
+    'html',
+    'list',
+    'paragraph',
+    'quote',
+    'separator',
+    'shortcode'
+  ];
   while (elements.length > 0) {
     const element = elements.shift();
     if (element.type === 'image') {
