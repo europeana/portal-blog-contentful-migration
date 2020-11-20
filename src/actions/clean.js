@@ -1,5 +1,6 @@
 // TODO: in future, move this to its own Node package
 // TODO: permit cleaning of a single entry by identifier
+// TODO: also delete linked assets
 
 const { contentfulManagement, contentfulPreviewClient } = require('../support/config');
 const { pad } = require('../support/utils');

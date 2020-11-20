@@ -1,9 +1,8 @@
 module.exports = [
   'authors',
-  'assets',
   'attachments',
   'clean',
-  'create',
+  'posts',
   'help',
   'body'
 ];
