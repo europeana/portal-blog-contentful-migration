@@ -4,13 +4,14 @@ const {
   mysqlClient, contentfulManagement
 } = require('../support/config');
 const { pad } = require('../support/utils');
+const { loadOrCreateAssetForAttachment } = require('./attachments');
 const {
   BlogPostingEntry, EmbedEntry, ImageWithAttributionEntry, PersonEntry, RichTextEntry
 } = require('../models');
 const { loadBody } = require('./body');
 
 const help = () => {
-  pad.log('Usage: npm run blog create [ID]');
+  pad.log('Usage: npm run blog posts [ID]');
 };
 
 // Thank you https://stackoverflow.com/a/1353711/6578424
@@ -25,7 +26,8 @@ const createHasParts = async(post) => {
   for (const part of bodyParts) {
     if (part.type === 'html') {
       const richTextEntry = new RichTextEntry;
-      richTextEntry.text = part.content;
+      const text = await linkAttributesToContentful(part.content);
+      richTextEntry.text = text;
       await richTextEntry.createAndPublish();
       hasPartSysIds.push(richTextEntry.sys.id);
     } else if (part.type === 'image') {
@@ -54,6 +56,32 @@ const createHasParts = async(post) => {
   }
 
   return hasPartSysIds;
+};
+
+const linkAttributesToContentful = async(html) => {
+  const linkMatches = html.matchAll(/"(https?:\/\/blog\.europeana\.eu(:81)?([^"]*))"/g);
+
+  for (const linkMatch of linkMatches) {
+    const url = linkMatch[1];
+    const path = linkMatch[3];
+
+    let replacement;
+
+    const postPathMatch = path.match(/^\/[0-9]{4}\/[0-9]{2}\/([^/]+)/);
+    if (postPathMatch) {
+      replacement = '/blog/' + postPathMatch[1];
+    } else {
+      const uploadPathMatch = path.match(/^\/wp-content\/uploads\//);
+      if (uploadPathMatch) {
+        const asset = await loadOrCreateAssetForAttachment(url);
+        if (asset) replacement = asset.fields.file.url;
+      }
+    }
+
+    if (replacement) html = html.replace(url, replacement);
+  }
+
+  return html;
 };
 
 const tagsAndCategories = async(id) => {

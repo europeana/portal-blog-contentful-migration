@@ -1,7 +1,6 @@
 const Entry = require('./Entry');
-const { rightsFromAbbreviation, hashedSysId } = require('../support/utils');
-const { accessibleGuid } = require('../actions/attachments');
-const { assetExists } = require('../actions/assets');
+const { rightsFromAbbreviation } = require('../support/utils');
+const { loadOrCreateAssetForAttachment } = require('../actions/attachments');
 
 class ImageWithAttributionEntry extends Entry {
   static get contentTypeId() {
@@ -34,9 +33,6 @@ class ImageWithAttributionEntry extends Entry {
     caption = caption.trim();
     if (caption === '') return null;
 
-    const assetId = hashedSysId(accessibleGuid(url));
-    if (!await assetExists(assetId)) return null;
-
     const captionParts = caption.split(',');
     let captionLastPart = captionParts[captionParts.length - 1].trim();
     if (captionLastPart.endsWith('.')) captionLastPart = captionLastPart.slice(0, -1);
@@ -63,7 +59,10 @@ class ImageWithAttributionEntry extends Entry {
       }
     }
 
-    imageWithAttributionEntry.image = assetId;
+    const asset = await loadOrCreateAssetForAttachment(url);
+    if (!asset) return null;
+
+    imageWithAttributionEntry.image = asset.sys.id;
 
     return imageWithAttributionEntry;
   }

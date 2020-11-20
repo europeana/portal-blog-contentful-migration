@@ -21,18 +21,6 @@ For an overview of the available CLI commands, run:
 npm run blog help
 ```
 
-### Attachments
-
-To migrate just the media attachments from Wordpress into Contentful as assets,
-run:
-```
-npm run blog attachments
-```
-
-The sys ID of the asset will be derived from the MD5 hash of the URL of the
-attachment, and only be stored if it does not already exist, so can be stopped
-and resumed without starting over.
-
 ### Authors
 
 To migrate blog post authors to `person` entries in Contentful, run:
@@ -40,24 +28,17 @@ To migrate blog post authors to `person` entries in Contentful, run:
 npm run blog authors
 ```
 
-### Assets
+### Posts
 
-To write a cache of the available asset IDs in the Contentful environment to
-tmp/assetIds.json, for later use by other scripts, speeding up their run time:
+To create the blog post content entries in Contentful from the Wordpress SQL,
+run:
 ```
-npm run blog assets cache
-```
-
-### Create
-
-To create the content entries in Contentful from the Wordpress SQL, run:
-```
-npm run blog create
+npm run blog posts
 ```
 
 To create just one entry for just one SQL row, add its primary key (ID):
 ```
-npm run blog create [ID]
+npm run blog posts [ID]
 ```
 
 ### Clean
